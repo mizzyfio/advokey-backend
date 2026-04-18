@@ -46,33 +46,24 @@ app.post('/auth/login', async (req, reply) => {
     return reply.status(401).send({ erro: 'Email ou senha incorretos' })
   }
 
+  console.log('Auth OK, buscando advogado:', email)
+
   const { data: adv, error: advError } = await supabase
     .from('advogados')
     .select('id, nome, email, oab, plano')
     .eq('email', email)
     .single()
 
+  console.log('Resultado advogado:', JSON.stringify(adv))
+  console.log('Erro advogado:', JSON.stringify(advError))
+
   if (advError || !adv) {
-    // Cria o registro automaticamente se não existir
-    const { data: novoAdv } = await supabase
-      .from('advogados')
-      .insert({ 
-        id: data.user.id,
-        nome: data.user.email.split('@')[0], 
-        email: data.user.email,
-        plano: 'escritorio'
-      })
-      .select()
-      .single()
-    
-    const token = app.jwt.sign({ id: novoAdv.id, email: novoAdv.email, plano: novoAdv.plano })
-    return { token, advogado: novoAdv }
+    return reply.status(401).send({ erro: `Advogado não encontrado: ${advError?.message}` })
   }
 
   const token = app.jwt.sign({ id: adv.id, email: adv.email, plano: adv.plano })
   return { token, advogado: adv }
 })
-
 // ── Registrar token FCM (para push notifications Flutter) ─────────────────────
 app.post('/dispositivos/token', async (req, reply) => {
   const { fcm_token, plataforma } = req.body
