@@ -13,7 +13,10 @@ import clientes from './routes/clientes.js'
 const app = Fastify({ logger: process.env.NODE_ENV !== 'production' })
 
 // ── Plugins ───────────────────────────────────────────────────────────────────
-await app.register(cors, { origin: true })
+await app.register(cors, {
+  origin: '*',
+  credentials: false
+})
 await app.register(jwt,  { secret: process.env.JWT_SECRET })
 await app.register(clientes)
 
