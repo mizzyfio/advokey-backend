@@ -36,15 +36,25 @@ app.get('/health', () => ({ status: 'ok', ts: new Date().toISOString() }))
 // ── Auth simples ──────────────────────────────────────────────────────────────
 app.post('/auth/login', async (req, reply) => {
   const { email, senha } = req.body
-  const { data, error }  = await supabase.auth.signInWithPassword({ email, password: senha })
-  if (error) return reply.status(401).send({ erro: 'Email ou senha incorretos' })
+  
+  const { data, error } = await supabase.auth.signInWithPassword({ 
+    email, 
+    password: senha 
+  })
+  
+  if (error) {
+    return reply.status(401).send({ erro: 'Email ou senha incorretos' })
+  }
 
-  // Busca dados do advogado
   const { data: adv } = await supabase
     .from('advogados')
     .select('id, nome, email, oab, plano')
     .eq('email', email)
     .single()
+
+  if (!adv) {
+    return reply.status(401).send({ erro: 'Advogado não encontrado' })
+  }
 
   const token = app.jwt.sign({ id: adv.id, email: adv.email, plano: adv.plano })
   return { token, advogado: adv }
