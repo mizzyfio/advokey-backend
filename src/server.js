@@ -36,7 +36,7 @@ app.get('/health', () => ({ status: 'ok', ts: new Date().toISOString() }))
 // ── Auth simples ──────────────────────────────────────────────────────────────
 app.post('/auth/login', async (req, reply) => {
   const { email, senha } = req.body
-  
+
   const { data, error } = await supabase.auth.signInWithPassword({ 
     email, 
     password: senha 
@@ -46,14 +46,27 @@ app.post('/auth/login', async (req, reply) => {
     return reply.status(401).send({ erro: 'Email ou senha incorretos' })
   }
 
-  const { data: adv } = await supabase
+  const { data: adv, error: advError } = await supabase
     .from('advogados')
     .select('id, nome, email, oab, plano')
     .eq('email', email)
     .single()
 
-  if (!adv) {
-    return reply.status(401).send({ erro: 'Advogado não encontrado' })
+  if (advError || !adv) {
+    // Cria o registro automaticamente se não existir
+    const { data: novoAdv } = await supabase
+      .from('advogados')
+      .insert({ 
+        id: data.user.id,
+        nome: data.user.email.split('@')[0], 
+        email: data.user.email,
+        plano: 'escritorio'
+      })
+      .select()
+      .single()
+    
+    const token = app.jwt.sign({ id: novoAdv.id, email: novoAdv.email, plano: novoAdv.plano })
+    return { token, advogado: novoAdv }
   }
 
   const token = app.jwt.sign({ id: adv.id, email: adv.email, plano: adv.plano })
