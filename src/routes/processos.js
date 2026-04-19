@@ -3,6 +3,18 @@
 import { detectarEndpoint } from '../services/datajud.js'
 import { consultarProcesso, extrairMovimentacoes } from '../services/datajud.js'
 
+function formatarData(valor) {
+  if (!valor) return null
+  const s = String(valor)
+  // Formato compacto: 20240507174721 → 2024-05-07
+  if (/^\d{14}$/.test(s)) return `${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}`
+  // Formato compacto sem hora: 20240507 → 2024-05-07
+  if (/^\d{8}$/.test(s)) return `${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}`
+  // Já tem T, pega só a data
+  if (s.includes('T')) return s.split('T')[0]
+  return s.slice(0, 10)
+}
+
 export default async function processos(fastify) {
 
   // ── GET /processos ─────────────────────────────────────────────────────────
@@ -55,7 +67,7 @@ export default async function processos(fastify) {
           assunto:           source.assuntos?.[0]?.nome || null,
           classe:            source.classe?.nome || null,
           valor_causa:       source.valorCausa || null,
-          data_distribuicao: source.dataAjuizamento?.split('T')[0] || null,
+          data_distribuicao: source.dataAjuizamento ? formatarData(source.dataAjuizamento) : null,
         }
       }
     } catch (e) {
