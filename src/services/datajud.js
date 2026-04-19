@@ -115,12 +115,23 @@ export function extrairMovimentacoes(source) {
   if (!source?.movimentos) return []
   return source.movimentos
     .map(m => ({
-      data_hora:   m.dataHora,
+      data_hora:   formatarDataHora(m.dataHora),
       codigo:      String(m.codigo || ''),
-      descricao:   m.nome || m.complemento || 'Movimentação',
+      descricao:   m.nome || m.complemento || 'Movimentacao',
       complemento: m.complementosTabelados?.map(c => c.nome).join(', ') || null
     }))
     .sort((a, b) => new Date(b.data_hora) - new Date(a.data_hora))
+}
+
+function formatarDataHora(valor) {
+  if (!valor) return new Date().toISOString()
+  const s = String(valor)
+  // Formato: 20240507174721 → 2024-05-07T17:47:21
+  if (/^\d{14}$/.test(s)) {
+    return `${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}T${s.slice(8,10)}:${s.slice(10,12)}:${s.slice(12,14)}`
+  }
+  // Já é ISO
+  return s
 }
 
 // ── Gera hash do estado atual do processo ─────────────────────────────────────
